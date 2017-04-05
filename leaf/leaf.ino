@@ -10,9 +10,9 @@
 #define LED_Y 3
 #define LED_G 6
 #define RELAY_GND 0
-#define RELAY_PWR 7
 #define RELAY_IN1 2
 #define RELAY_IN2 4
+#define RESET 7
 
 #define LIGHT_ON 0.2
 #define LIGHT_OFF 0.1
@@ -27,6 +27,7 @@ boolean lit = false;
 double avg[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 void setup() {
+  pinMode(RESET, INPUT);
 
   Serial.begin(9600);
   Serial.println("LIS3DH BEN test!");
@@ -36,7 +37,6 @@ void setup() {
   pinMode(LED_Y, OUTPUT);
   pinMode(LED_G, OUTPUT);
   pinMode(RELAY_GND, OUTPUT);
-  pinMode(RELAY_PWR, OUTPUT);
   pinMode(RELAY_IN1, OUTPUT);
   pinMode(RELAY_IN2, OUTPUT);
 
@@ -44,11 +44,12 @@ void setup() {
   digitalWrite(RELAY_GND, LOW);
   digitalWrite(RELAY_IN1, HIGH);
   digitalWrite(RELAY_IN2, HIGH);
-  digitalWrite(RELAY_PWR, HIGH);
-  analogWrite(LED_G, LED_DUTY_CYCLE);
   
   if (! lis.begin(0x18)) {   // change this to 0x19 for alternative i2c address
     Serial.println("Couldnt start");
+    delay(10000);
+    pinMode(RESET, OUTPUT);
+    digitalWrite(RESET, LOW);
     while (1);
   }
   Serial.println("LIS3DH found!");
@@ -58,6 +59,7 @@ void setup() {
   Serial.print("Range = "); Serial.print(2 << lis.getRange());  
   Serial.println("G");
 
+  analogWrite(LED_G, LED_DUTY_CYCLE);
 }
 
 void loop() {
@@ -83,6 +85,7 @@ void loop() {
   //Serial.print(lis.x / (double) 0x3fff);
 
   double xg = lis.x / (double) 0x3fff;
+  xg = -xg;
 
   if (xg > LIGHT_ON) {
     analogWrite(LED_Y, LED_DUTY_CYCLE + LED_DC_YELLOW_MOD);
