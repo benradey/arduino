@@ -14,8 +14,9 @@
 #define RELAY_IN2 4
 #define RESET 7
 
-#define LIGHT_ON 0.2
-#define LIGHT_OFF 0.1
+#define G_MULTIPLIER 0x3fff
+#define LIGHT_ON G_MULTIPLIER * 0.2
+#define LIGHT_OFF G_MULTIPLIER * 0.1
 #define LED_DUTY_CYCLE 10
 #define LED_DC_YELLOW_MOD 20
 
@@ -25,6 +26,7 @@ boolean lit = false;
 
 #define AVG_LENGTH 20
 double avg[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+int avgIndex = 0;
 
 void setup() {
   pinMode(RESET, INPUT);
@@ -63,7 +65,6 @@ void setup() {
 }
 
 void loop() {
-  
   lis.read();      // get X Y and Z data at once
   // Then print out the raw data
   //Serial.print("X:  "); Serial.print(lis.x); Serial.print(" / "); Serial.print(0x7fff);
@@ -84,7 +85,7 @@ void loop() {
 
   //Serial.print(lis.x / (double) 0x3fff);
 
-  double xg = lis.x / (double) 0x3fff;
+  int xg = lis.x;
   xg = -xg;
 
   if (xg > LIGHT_ON) {
@@ -93,16 +94,18 @@ void loop() {
     analogWrite(LED_Y, 0);
   }
 
-  double avgg = 0;
+  avg[avgIndex] = xg;
+  avgIndex++;
+  if (avgIndex >= AVG_LENGTH) {
+    avgIndex = 0;
+  }
+  
+  long avgg = 0;
   for (int i = AVG_LENGTH - 1 ; i > 0 ; i--) {
-    avg[i] = avg[i-1];
     avgg += avg[i];
   }
 
-  avg[0] = xg;
-  avgg += xg;
   avgg = avgg / AVG_LENGTH;
-  
 
   if (lit && avgg < LIGHT_OFF) {
     Serial.println("Lights off");
@@ -116,8 +119,6 @@ void loop() {
     digitalWrite(RELAY_IN1, LOW);
     lit = true;
   }
-  
  
-  delay(20); 
-
+  delay(20);
 }
